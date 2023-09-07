@@ -21,5 +21,9 @@ Les données et les résultats sont disponibles sous licence [insérer ici la li
 
 # Auteurs
 René-Jubilé MABILA N.
+Moïse BALONDANE
+Agathe AGANZE KABERA
+Emmanuella KARARO ZIGABE
+Serge MUKOTANYI MUGISHO
 
-Contact : 
+Contact : mabila.ngambele@ucbukavu.ac.cd
