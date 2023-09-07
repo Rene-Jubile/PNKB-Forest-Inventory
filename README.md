@@ -20,10 +20,10 @@ L'objectif principal de ce repository est de rendre les données et les résulta
 Les données et les résultats sont disponibles sous licence [insérer ici la licence applicable, par exemple, licence Creative Commons Attribution 4.0 International (CC BY 4.0)] pour permettre leur réutilisation tout en attribuant correctement la source.
 
 # Auteurs
-René-Jubilé MABILA N.
-Moïse BALONDANE
-Agathe AGANZE KABERA
-Emmanuella KARARO ZIGABE
+René-Jubilé MABILA N. /n
+Moïse BALONDANE /n
+Agathe AGANZE KABERA /n
+Emmanuella KARARO ZIGABE /n
 Serge MUKOTANYI MUGISHO
 
 Contact : mabila.ngambele@ucbukavu.ac.cd
