@@ -5,7 +5,7 @@
 rm(list = ls())
 
 # Set working directory
-setwd(dir = "D:/G3 GSEA/COURS/Inventaire forestier/TP/Data")
+setwd(dir = "Inventaire forestier/TP/Data")
 
 #Load libraries
 library(tidyverse)
@@ -17,7 +17,7 @@ library(openxlsx)
 library(stats)
 
 #import data
-data <-readxl::read_xlsx("D:/G3 GSEA/COURS/Inventaire forestier/TP/Data/data.xlsx")
+data <-readxl::read_xlsx("TP/Data/data.xlsx")
 
 #CALCUL VARIABLES----
 
@@ -163,26 +163,7 @@ nombre_arbres_par_intervalle <- table(donnees_intervalles$Intervalles)
 # # Créer un dataframe avec les comptages
  df_comptage <- data.frame(Intervalles = names(nombre_arbres_par_intervalle),
                            Nombre_Arbres = as.numeric(nombre_arbres_par_intervalle))
-# 
-# # Créer l'histogramme
-# ggplot(df_comptage, aes(x = Intervalles, y = Nombre_Arbres)) +
-#   geom_bar(stat = "identity", position = "dodge") +
-#   labs(title = "Nombre d'arbres par intervalle de diamètre",
-#        x = "Intervalle de diamètre",
-#        y = "Nombre d'arbres") +
-#   theme_minimal()
 
-######################################
-# gg <- ggplot(data_groupes, aes(x = intervalles)) +
-#   geom_bar(stat = "count", position = "dodge") +
-#   labs(title = "Nombre d'arbres par intervalle de diamètre",
-#        x = "Intervalle de diamètre",
-#        y = "Nombre d'arbres") +
-#   theme_minimal() +
-#   facet_wrap(~groupe, ncol = 1)  # Une colonne pour chaque groupe
-# 
-# # Afficher le graphique
-# print(gg)
 
 # Fonction pour créer les graphiques pour un groupe donné
 create_group_plots <- function(data, groupe) {
@@ -204,37 +185,6 @@ create_group_plots <- function(data, groupe) {
 transect <- create_group_plots(data = data,
                                  groupe = "Transect")
 # 
-# 
-# create_histogram <- function(data, groupe) {
-#   filtered_data <- data[data$groupe == groupe, ]
-#   
-#   ggplot(filtered_data, aes(x = cut(`DIAMETRE EN CM`, breaks = c(0, 10, 20, 30, 40, 50, 100), labels = c("0-10", "11-20", "21-30", "31-40", "41-50", "50-100")), fill = METHODES)) +
-#     geom_bar(position = "dodge") +
-#     labs(title = paste("Histogramme des arbres pour le groupe", groupe),
-#          x = "Diamètre",
-#          y = "Nombre d'arbres") +
-#     scale_fill_discrete(name = "METHODES") +
-#     theme_minimal()
-# }
-# 
-# # Exemple d'utilisation pour le groupe "Transect 1"
-# create_histogram(data, "Transect 1")
-# 
-# create_histogram_faceted <- function(data, groupe) {
-#   filtered_data <- data[data$groupe == groupe, ]
-#   
-#   ggplot(filtered_data, aes(x = cut(`DIAMETRE EN CM`, breaks = c(0, 10, 20, 30, 40, 50), labels = c("0-10", "11-20", "21-30", "31-40", "41-50")), fill = METHODES)) +
-#     geom_bar(position = "dodge") +
-#     labs(title = paste("Histogramme des arbres pour le groupe", groupe),
-#          x = "Diamètre",
-#          y = "Nombre d'arbres") +
-#     scale_fill_discrete(name = "METHODES") +
-#     theme_minimal() +
-#     facet_wrap(~ METHODES, ncol = 4)  # Mettez le nombre de colonnes souhaité ici
-# }
-# 
-# # Exemple d'utilisation pour le groupe "Transect 1"
-# create_histogram_faceted(data, "Transect 1")
 # 
 
 #DIAGRAMME PAR TRANCHES DE DIAMETRE----
@@ -322,13 +272,9 @@ ggsave(filename = "output/tout_graph.png",
 data <- data |> 
   na.omit()
 
+#ANNOVA----
 
 # # Créez un dataframe agrégé pour le nombre d'espèces et le nombre d'individus par groupe et méthode
-# aggregated_data <- data %>%
-#   group_by(groupe, METHODES) %>%
-#   reframe(Nb_especes = n_distinct(data$espece),
-#             Nb_individus = n())
-
 aggregated_data <- data %>%
   group_by(groupe, METHODES) %>%
   reframe(Nb_individus = n(),
@@ -343,48 +289,6 @@ anova_individus <- aov(Nb_individus ~ groupe, data = aggregated_data)
 # Résumé des ANOVA
 summary(anova_especes)
 summary(anova_individus)
-
-
-
-# 
-# 
-# # Supposons que votre dataframe s'appelle "data"
-# 
-# # Sélectionnez le groupe pour lequel vous souhaitez calculer l'indice de Jaccard
-# groupe <- "Transect 1"  # Remplacez par le groupe de votre choix
-# 
-# # Filtrer les données pour le groupe sélectionné
-# group_data <- data %>%
-#   filter(groupe == groupe)
-# 
-# # Créer une liste des méthodes uniques pour ce groupe
-# methods_list <- unique(group_data$METHODES)
-# 
-# # Créer une fonction pour calculer l'indice de Jaccard
-# jaccard_index <- function(method1, method2) {
-#   intersection_size <- length(intersect(method1, method2))
-#   union_size <- length(union(method1, method2))
-#   return(intersection_size / union_size)
-# }
-# 
-# # Créer une matrice pour stocker les indices de Jaccard entre les méthodes
-# jaccard_matrix <- matrix(0, nrow = length(methods_list), ncol = length(methods_list))
-# 
-# # Calculer les indices de Jaccard
-# for (i in 1:length(methods_list)) {
-#   for (j in 1:length(methods_list)) {
-#     jaccard_matrix[i, j] <- jaccard_index(
-#       group_data$METHODES[group_data$METHODES == methods_list[i]],
-#       group_data$METHODES[group_data$METHODES == methods_list[j]]
-#     )
-#   }
-# }
-# 
-# # Afficher la matrice des indices de Jaccard
-# colnames(jaccard_matrix) <- methods_list
-# rownames(jaccard_matrix) <- methods_list
-# print(jaccard_matrix)
-
 
 #NOMBRES D'ESPECES----
 #
