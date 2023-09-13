@@ -23,7 +23,10 @@ Assurez-vous d'avoir R installé sur votre système.
 Installez les packages R nécessaires en exécutant le script
 
 `install_packages.R` :
-Rscript install_packages.R
+
+   ```bash
+      Rscript install_packages.R
+```
 
 # Utilisation
 Pour générer les calculs d'inventaire, suivez ces étapes simples :
