@@ -1,29 +1,36 @@
-# PNKB-Forest-Inventory
+# Script pour faire des calculs d'iventaire
 
-# Description
-Ce repository GitHub contient les données et les résultats de l'étude sur la structure et la diversité du peuplement forestier du Parc National de Kahuzi-Biega (PNKB) en République Démocratique du Congo. L'étude a été réalisée en utilisant deux méthodes d'inventaire distinctes : le placeau et le transect. Les données comprennent des informations sur la composition des espèces, la densité de biomasse, le volume de bois, la surface terrière, la structure diamétrique, l'indice de Shannon, et bien plus encore.
+Ce repository contient un script R pour générer un rapport d'inventaire forestier pour le Parc National de Kahuzi-Biega. Le rapport comprend des analyses des données d'inventaire, des visualisations et des calculs de biomasse, de densité et plus encore.
 
-# Contenu
+## Table des matières
 
-Données Brutes : Ce répertoire contient les données brutes collectées sur le terrain, y compris les données de chaque site d'échantillonnage, les relevés botaniques, les mesures de biomasse, et les informations sur les arbres.
+- [Installation](#installation)
+- [Utilisation](#utilisation)
+- [Exemples](#exemples)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
 
-**Résultats :** Vous trouverez ici les résultats de l'étude, y compris les graphiques, les tableaux, et les analyses statistiques.
+## Installation
 
-**Scripts d'Analyse :** Les scripts R utilisés pour effectuer les analyses statistiques et générer les graphiques sont disponibles dans ce répertoire.
+Pour utiliser ce script, vous devez suivre ces étapes d'installation :
 
-**Documentation :** Cette section contient la documentation détaillée de l'étude, y compris la méthodologie, les formules utilisées, et les interprétations des résultats.
+1. Clonez ce dépôt GitHub sur votre machine locale :
 
-# Objectif
-L'objectif principal de ce repository est de rendre les données et les résultats de l'étude accessibles à d'autres chercheurs, gestionnaires de parcs, et parties intéressées afin de contribuer à la compréhension de la biodiversité et de la gestion forestière dans le PNKB.
+   ```bash
+   git clone https://github.com/votre-utilisateur/parc-kahuzi-biega-inventaire.git
 
-# Licence
-Les données et les résultats sont disponibles sous licence [insérer ici la licence applicable, par exemple, licence Creative Commons Attribution 4.0 International (CC BY 4.0)] pour permettre leur réutilisation tout en attribuant correctement la source.
+Assurez-vous d'avoir R installé sur votre système.
+Installez les packages R nécessaires en exécutant le script
 
-# Auteurs
-René-Jubilé MABILA N. \n
-Moïse BALONDANE \n
-Agathe AGANZE KABERA \n
-Emmanuella KARARO ZIGABE \n
-Serge MUKOTANYI MUGISHO
+`install_packages.R` :
+Rscript install_packages.R
 
-Contact : mabila.ngambele@ucbukavu.ac.cd
+# Utilisation
+Pour générer les calculs d'inventaire, suivez ces étapes simples :
+
+Placez vos données d'inventaire au format Excel dans le répertoire Data.
+Ouvrez le script R scrip_inventaire.R avec RStudio ou un autre environnement R.
+
+Exécutez le script en suivant les commentaires pour personnaliser les paramètres et générer vos résultats.
+Rendez-vous dans le dossier output pour voir vos résultats.
+
