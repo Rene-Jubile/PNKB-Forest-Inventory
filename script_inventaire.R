@@ -3,27 +3,24 @@
 # Effacer la mémoire (supprime toutes les variables existantes)
 rm(list = ls())
 
-# Définir le répertoire de travail
-setwd(dir = "TP/Data")
-
 # Charger les bibliothèques requises
-library(tidyverse)        # Bibliothèque pour la manipulation de données
-library(BIOMASS)          
-library(roxygen2)         # Bibliothèque pour la documentation du code
-library(hrbrthemes)       # Bibliothèque pour les thèmes de graphiques
-library(gridExtra)        # Bibliothèque pour organiser les graphiques
-library(openxlsx)         # Bibliothèque pour l'exportation Excel
-library(stats)            # Bibliothèque pour les statistiques
+libs <- c("tidyverse", "BIOMASS", "hrbrthemes", "gridExtra", "openxlsx", "stats", "wrMisc")
+invisible(lapply(libs, library, character.only = T))
+stringsAsFactors = FALSE
+
+# Définir le répertoire de travail
+path <-"D:/G3 GSEA/COURS/Inventaire forestier/TP/Data/data.xlsx"
+# setwd(dir = path)
 
 # Importer les données à partir du fichier Excel
-data <- readxl::read_xlsx("data.xlsx")
+data <- readxl::read_xlsx(path)
 
 # CALCUL DES VARIABLES----
 
 # Créer une colonne "groupe" en fonction de la méthode d'inventaire
 data <- data |> 
   mutate(groupe = case_when(
-    METHODES %in% c("T1", "T2", "T4", "T5", "T6") ~ "Transect",
+    METHODES %in% c("T1", "T2", "T3", "T4", "T5", "T6") ~ "Transect",
     METHODES %in% c("P1", "P2") ~ "Placeau",
     TRUE ~ "Autres"
   ))
@@ -47,7 +44,7 @@ GetHeight <- function(diam, alt){
                                          ifelse(categorie == 4, -15.26+11.57*log(diam)-1.17*((log(diam)^2)), NA)))),
                     NA)
   
-  return(height)
+  return(round(height, 2))
 }
 
 # Ajouter une colonne "Height" avec les hauteurs calculées
@@ -60,6 +57,8 @@ data <- data |>
 getvolume <- function(circonference, height){
   # Cette formule permet de calculer le volume par arbre
   volume = (((circonference^2)/100)*height)/4*3.14
+  
+  return(round(volume, 2))
 }
 
 # Ajouter une colonne calculée de volume
@@ -71,6 +70,8 @@ data <- data |>
 getBasalArea <- function(diam){
   # Cette fonction calcule la surface terrière en m²/ha
   BasalArea = (3.14*(diam*0.01)^2)/4
+
+  return(round(BasalArea, 2))
 }
 
 # Créer une colonne calculée de surface terrière
@@ -89,8 +90,10 @@ getWooDen <- function(genus, species, region = "World" ){
     addWoodDensityData = NULL,
     verbose = TRUE
   )
-  
-  return(meanWD = density$meanWD)
+
+  meanWD = density$meanWD
+  # return(meanWD = density$meanWD)
+  return(round(meanWD, 2))
 }
 
 # Ajouter une colonne "WoodDensity" avec les densités calculées
@@ -105,7 +108,7 @@ GetBiomass <- function(diam, height, density){
 
   biomass_en_kg = density * exp(-2.977 + log(density * (diam*1)^2 * height))
   
-  return(biomass_en_kg)
+  return(round(biomass_en_kg, 2))
 }
 
 # Créer une colonne calculée de la biomasse par arbre
@@ -237,9 +240,86 @@ liste_genres <- unique(data$Genre)
 liste_especes <- as.data.frame(liste_especes)
 liste_genres <- as.data.frame(liste_genres)
 
+#Calcul nombre d'especes et nbre de genres
+data_methodes1 <- data %>%
+  group_by(METHODES, groupe) %>%
+  reframe(Nombre_Especes = n_distinct(EPITHETE),
+            Nombre_Genres = n_distinct(Genre))
+
+#Calcul de la superficie
+data <- data %>%
+  mutate(Superficie_ha = ifelse(groupe == "Transect", 0.19, 2))
+
+#
+data_methodes <- data %>%
+  group_by(METHODES, groupe) %>%
+  reframe(Nombre_Especes = n_distinct(EPITHETE),
+          Nombre_Genres = n_distinct(Genre),
+          Superficie_ha = Superficie_ha)
+
+#Calcul densité genre par ha and espece par ha
+density_per_ha <- data_methodes %>%
+  group_by(groupe, METHODES) %>%
+  reframe(Densite_Moyenne_Genre_ha = sum(Nombre_Genres) / sum(Superficie_ha),
+            Densite_Espece_ha = sum(Nombre_Especes) / sum(Superficie_ha))
+#Calcul variables mean per ha
+meanVariables_ha <- data %>%
+  group_by(groupe, METHODES) %>%
+  reframe(Volume_m3_ha = sum(volume_en_m3) / sum(Superficie_ha),
+            BasalArea_ha = sum(BasalArea) / sum(Superficie_ha),
+          biomass_ha = sum(biomass_en_kg) / sum(Superficie_ha))
+
+#Create a new dataframe "data1" with column 'espece' and 'methodes'
+
+data1 <- data %>%
+  reframe(sites = METHODES,
+            especes = espece)
+
+#Getpresence_absence
+Getpresence <- function(data, especes, sites){
+
+#data : dataframme
+#species : species' column
+#sites : sites' column
+
+# Création du dataframe de présence/absence
+  presence_absence <- data %>%
+    group_by(especes, sites) %>%
+    summarise(presence = 1) %>%
+    pivot_wider(names_from = sites, values_from = presence, values_fill = 0) %>%
+    ungroup()
+
+  #Réordonner les colonnes par ordre alphabetique
+  presence_absence <- presence_absence %>%
+    select(especes, everything()) %>%
+
+  return(presence_absence)
+}
+
+#Tableau de presence ou d'absence
+pre_abs <- Getpresence(data1, especes, sites)
+
+#occurence
+GetOccurence <- function(df, espece, sites){
+  result <- df %>%
+    group_by({{espece}}, {{sites}}) %>%
+    summarise(NombreOccurrences = n()) %>%
+    ungroup()
+  # Utilisez pivot_wider pour obtenir un tableau à deux entrées
+  OccuTab <- pivot_wider(result, names_from = {{sites}}, values_from = NombreOccurrences, values_fill = 0)
+  # Remplacez les valeurs NA par 0
+  OccuTab[is.na(OccuTab)] <- 0
+
+  return(OccuTab)
+}
+
+occurence <- GetOccurence(df = data,
+                          espece = espece,
+                          sites = METHODES
+)
+
 # Définir les noms des feuilles pour chaque dataframe
-dataset_names <- list('Sheet1' = data, 'Sheet2' = data_methodes1, 'Sheet3' = data_variables,
-                      'Sheet4' = data_variables1, 'sheet5' = liste_especes, 'Sheet6' = liste_genres)
+dataset_names <- list('Sheet1' = data, 'Sheet2' = data_methodes1, 'Sheet3' = density_per_ha, 'Sheet4' = meanVariables_ha, 'sheet5' = pre_abs, 'Sheet6' = occurence)
 
 # Exporter chaque dataframe dans un fichier Excel
-openxlsx::write.xlsx(dataset_names, file = "myData.xlsx")
+openxlsx::write.xlsx(dataset_names, file = "D:/G3 GSEA/COURS/Inventaire forestier/TP/Data/myData.xlsx")
