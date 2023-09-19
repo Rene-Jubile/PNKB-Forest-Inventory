@@ -4,7 +4,7 @@
 rm(list = ls())
 
 # Charger les bibliothèques requises
-libs <- c("tidyverse", "BIOMASS", "hrbrthemes", "gridExtra", "openxlsx", "stats", "wrMisc")
+libs <- c("tidyverse", "BIOMASS", "hrbrthemes", "gridExtra", "openxlsx", "stats", "wrMisc", "vegan")
 invisible(lapply(libs, library, character.only = T))
 stringsAsFactors = FALSE
 
