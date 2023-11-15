@@ -47,3 +47,5 @@ Feel free to explore, modify, and contribute to this project! For more details, 
 **Note:** Ensure that the required libraries are installed before running the code. You can install them using the `install.packages()` function in R.
 
 Happy analyzing! 🌲📊
+
+René-Jubilé MABILA (@mabilarene)
