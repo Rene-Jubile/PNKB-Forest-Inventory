@@ -4,8 +4,9 @@
 rm(list = ls())
 
 # Charger les bibliothèques requises
-libs <- c("tidyverse", "BIOMASS", "hrbrthemes", "gridExtra", "openxlsx", "stats", "wrMisc", "vegan")
-invisible(lapply(libs, library, character.only = T))
+
+pacman::p_load(tidyverse, BIOMASS, hrbrthemes, gridExtra, openxlsx, stats, 
+               wrMisc, vegan)
 stringsAsFactors = FALSE
 
 # Définir le répertoire de travail
