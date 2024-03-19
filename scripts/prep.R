@@ -18,6 +18,7 @@ pacman::p_load(tidyverse, BIOMASS, hrbrthemes, gridExtra, openxlsx, stats,
                wrMisc, vegan)
 stringsAsFactors = FALSE
 
+data <- rio::import("data/data.xlsx")
 
 # CALCUL DES VARIABLES----
 
