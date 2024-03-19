@@ -53,64 +53,23 @@ data <- data |>
   mutate(Height = GetHeight(diam = data$`DIAMETRE EN CM`,
                             alt = data$`Altitude en m`))
 
+#Ajouteer une colonne 'volume' avec les hauteurs calculées
+data <- data %>% 
+  mutate(
+    volume_en_m3 = getvolume(circonference = data$circonference_en_cm,
+                       height = data$height)
+  )
 
-# Calcul du volume de chaque arbre en fonction de la circonférence et de la hauteur
-getvolume <- function(circonference, height){
-  # Cette formule permet de calculer le volume par arbre
-  volume = (((circonference^2)/100)*height)/4*3.14
-  
-  return(round(volume, 2))
-}
-
-# Ajouter une colonne calculée de volume
-data <- data |> 
-  mutate(volume_en_m3 = getvolume(circonference = `CIRCONFERENCE EN CM`,
-                                  height = Height))
-
-# Définition d'une fonction pour calculer la surface terrière en m²/ha en fonction du diamètre
-getBasalArea <- function(diam){
-  # Cette fonction calcule la surface terrière en m²/ha
-  BasalArea = (3.14*(diam*0.01)^2)/4
-
-  return(round(BasalArea, 2))
-}
 
 # Créer une colonne calculée de surface terrière
 data <- data |> 
   mutate(BasalArea = getBasalArea(diam = `DIAMETRE EN CM`))
 
-# Définition d'une fonction pour obtenir la densité du bois en fonction du genre et de l'épithète de l'arbre
-getWooDen <- function(genus, species, region = "World" ){
-  # Load Wood density
-  density <- getWoodDensity(
-    genus = genus,
-    species = species,
-    stand = NULL,
-    family = NULL,
-    region = region,
-    addWoodDensityData = NULL,
-    verbose = TRUE
-  )
-
-  meanWD = density$meanWD
-  # return(meanWD = density$meanWD)
-  return(round(meanWD, 2))
-}
 
 # Ajouter une colonne "WoodDensity" avec les densités calculées
 data <- data |> 
   mutate(WoodDensity = getWooDen(genus = Genre,
                                  species = EPITHETE))
-
-# Définition d'une fonction pour calculer la biomasse des arbres en fonction du diamètre, de la hauteur et de la densité
-GetBiomass <- function(diam, height, density){
-  # diam : Diamètre en cm
-  # height : Hauteur en m
-
-  biomass_en_kg = density * exp(-2.977 + log(density * (diam*1)^2 * height))
-  
-  return(round(biomass_en_kg, 2))
-}
 
 # Créer une colonne calculée de la biomasse par arbre
 data <- data %>%
@@ -153,65 +112,6 @@ create_histogram_faceted <- function(data, ncol, groupe, facet.labs, ylab, xlab,
   return(gg)
 }
 
-# Diagramme de tranches pour le groupe "Transect"
-transect_graph <- create_histogram_faceted(data = data,
-                                           groupe = "Transect",
-                                           facet.labs = c(
-                                             "T1" = "Premier 100m",
-                                             "T2" = "Deuxième 100m",
-                                             "T4" = "Quatrième 100m",
-                                             "T5" = "Cinquième 100m",
-                                             "T6" = "Sixième 100m"),
-                                           ylab = "Nombres d'arbres",
-                                           xlab = "Diamètre (en cm)",
-                                           titre = "Diagramme de tranches de diamètre",
-                                           sous_titre = "Transect",
-                                           sourcE = "Source: Données d'inventaire",
-                                           ncol = 3)
-
-# Diagramme de tranches pour le groupe "Placeau"
-placeau_graph <- create_histogram_faceted(data = data,
-                                          groupe = "Placeau",
-                                          ncol = 2,
-                                          facet.labs = c("P2" = "Placeau 2",
-                                                          "P1" = "Placeau 1"),
-                                          ylab = "Nombres d'arbres",
-                                          xlab = "Diamètre (en cm)",
-                                          titre = "Diagramme de tranches de diamètre",
-                                          sous_titre = "Placeaux",
-                                          sourcE = "Source: Données d'inventaire")
-
-# Diagramme de tranches pour l'ensemble des données
-tout_graph <- ggplot(data, aes(x = cut(`DIAMETRE EN CM`, breaks = c(10, 20, 30, 40, 50, 80, 100, 300), labels = c("11-20", "21-30", "31-40", "41-50", "51-80", "81-100", "101-300")), fill = groupe)) +
-  geom_bar(position = "dodge") +
-  facet_wrap(~ groupe, ncol = 2) +
-  scale_color_ipsum( ) +
-  scale_fill_ipsum( ) +
-  theme_ipsum_rc() +
-  labs(y = "Nombres d'arbres", x = "Diamètre (en cm)",
-       title = "Diagramme de tranches",
-       subtitle = "En fonction de la méthode",
-       caption = "Source : Données d'inventaire") +
-  theme(legend.position = "none", axis.text.x = element_text(size = 8))
-
-# Enregistrement des graphiques en tant qu'images PNG
-ggsave(filename = "output/transect.png",
-       plot = transect_graph,
-       width = 10,
-       height = 6,
-       bg = "white")
-
-ggsave(filename = "output/placeau.png",
-       plot = placeau_graph,
-       width = 10,
-       height = 6,
-       bg = "white")
-
-ggsave(filename = "output/tout_graph.png",
-       plot = tout_graph,
-       width = 10,
-       height = 6,
-       bg = "white")
 
 # Suppression des lignes avec des valeurs manquantes (NA)
 data <- data |> 
@@ -276,43 +176,10 @@ data1 <- data %>%
   reframe(sites = METHODES,
             especes = espece)
 
-#Getpresence_absence
-Getpresence <- function(data, especes, sites){
-
-#data : dataframme
-#species : species' column
-#sites : sites' column
-
-# Création du dataframe de présence/absence
-  presence_absence <- data %>%
-    group_by(especes, sites) %>%
-    summarise(presence = 1) %>%
-    pivot_wider(names_from = sites, values_from = presence, values_fill = 0) %>%
-    ungroup()
-
-  #Réordonner les colonnes par ordre alphabetique
-  presence_absence <- presence_absence %>%
-    select(especes, everything()) %>%
-
-  return(presence_absence)
-}
 
 #Tableau de presence ou d'absence
 pre_abs <- Getpresence(data1, especes, sites)
 
-#occurence
-GetOccurence <- function(df, espece, sites){
-  result <- df %>%
-    group_by({{espece}}, {{sites}}) %>%
-    summarise(NombreOccurrences = n()) %>%
-    ungroup()
-  # Utilisez pivot_wider pour obtenir un tableau à deux entrées
-  OccuTab <- pivot_wider(result, names_from = {{sites}}, values_from = NombreOccurrences, values_fill = 0)
-  # Remplacez les valeurs NA par 0
-  OccuTab[is.na(OccuTab)] <- 0
-
-  return(OccuTab)
-}
 
 occurence <- GetOccurence(df = data,
                           espece = espece,
@@ -324,3 +191,4 @@ dataset_names <- list('Sheet1' = data, 'Sheet2' = data_methodes1, 'Sheet3' = den
 
 # Exporter chaque dataframe dans un fichier Excel
 openxlsx::write.xlsx(dataset_names, file = "D:/G3 GSEA/COURS/Inventaire forestier/TP/Data/myData.xlsx")
+
