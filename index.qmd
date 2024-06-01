@@ -1,0 +1,300 @@
+---
+title: "index"
+author: "René-Jubilé MABILA"
+format: html
+editor: visual
+---
+
+# Analyse des Données d'Inventaire Forestier : Un Guide pour Débutants
+
+L'analyse des données forestières est essentielle pour comprendre la composition, la structure et la dynamique des forêts. Cet article explique un script R conçu pour traiter et analyser des données d'inventaire forestier. Nous allons décortiquer ce script étape par étape pour vous aider à comprendre son fonctionnement et son utilité.
+
+## Introduction et Préparation de l'Environnement
+
+```{r}
+
+# Effacer la mémoire (supprime toutes les variables existantes)
+rm(list = ls())
+
+# Charger les bibliothèques requises
+pacman::p_load(tidyverse, BIOMASS, hrbrthemes, gridExtra, openxlsx, stats, wrMisc, vegan)
+stringsAsFactors = FALSE
+```
+
+**Explication :**\
+Nous commençons par nettoyer l'environnement R en supprimant toutes les variables existantes avec `rm(list = ls())`. Ensuite, nous chargeons les bibliothèques nécessaires pour l'analyse des données forestières à l'aide de `pacman::p_load`.
+
+## Définir le Répertoire de Travail et Importer les Données
+
+```{r}
+# Définir le répertoire de travail
+path <- "D:/G3 GSEA/COURS/Inventaire forestier/TP/Data/data.xlsx"
+
+# Importer les données à partir du fichier Excel
+data <- rio::import("/home/rene/Documents/GitHub/PNKB-Forest-Inventory/data/data.xlsx")
+```
+
+**Explication :**\
+Nous définissons le chemin vers notre fichier de données Excel et utilisons `readxl::read_xlsx` pour importer ces données dans R.
+
+## Création de Nouvelles Colonnes
+
+### Ajouter une Colonne "groupe"
+
+```{r}
+data <- data |> 
+  mutate(groupe = case_when(
+    METHODES %in% c("T1", "T2", "T3", "T4", "T5", "T6") ~ "Transect",
+    METHODES %in% c("P1", "P2") ~ "Placeau",
+    TRUE ~ "Autres"
+  ))
+
+```
+
+**Explication :**\
+Nous ajoutons une nouvelle colonne "groupe" qui classe les méthodes d'inventaire en trois groupes : "Transect", "Placeau" et "Autres".
+
+### Combiner les Colonnes "Genre" et "EPITHETE"
+
+```{r}
+data$espece <- paste(data$Genre, data$EPITHETE, sep=" ")
+```
+
+**Explication :**\
+Nous créons une nouvelle colonne "espece" en combinant les colonnes "Genre" et "EPITHETE" pour obtenir le nom complet de chaque espèce.
+
+## Calcul de la Hauteur des Arbres
+
+### Définir la Fonction "GetHeight"
+
+```{r}
+GetHeight <- function(diam, alt){
+   # Déterminer la catégorie d'altitude
+   categorie <- ifelse(alt >= 1250 & alt < 1500, 1,
+                      ifelse(alt >= 1500 & alt < 1800, 2,
+                             ifelse(alt >= 1800 & alt < 2400, 3,
+                                    ifelse(alt >= 2400 & alt <= 2600, 4, NA))))
+  
+  # Appliquer la formule en fonction de la catégorie
+  height <- ifelse(!is.na(categorie), 
+                    ifelse(categorie == 1, 30.61*exp(-2.7*exp(-0.95*diam)),
+                           ifelse(categorie == 2, 30*exp(3.2*exp(-0.94*diam)),
+                                  ifelse(categorie == 3, 22.7-24.41*exp(-exp(-3.3)*diam),
+                                         ifelse(categorie == 4, -15.26+11.57*log(diam)-1.17*((log(diam)^2)), NA)))),
+                    NA)
+  
+  return(round(height, 2))
+}
+
+```
+
+**Explication :**\
+Cette fonction calcule la hauteur des arbres en fonction du diamètre et de l'altitude en utilisant différentes formules selon la catégorie d'altitude.
+
+### Ajouter la Colonne "Height"
+
+```{r}
+data <- data |> 
+  mutate(Height = GetHeight(diam = data$`DIAMETRE EN CM`, alt = data$`Altitude en m`))
+```
+
+**Explication :**\
+Nous ajoutons une nouvelle colonne "Height" aux données, calculée en utilisant la fonction `GetHeight`.
+
+## Calcul du Volume, de la Surface Terrière et de la Densité du Bois
+
+### Volume des Arbres
+
+```{r}
+
+# Calcul du volume de chaque arbre en fonction de la circonférence et de la hauteur
+getvolume <- function(circonference, height){
+  # Cette formule permet de calculer le volume par arbre
+  volume = (((circonference^2)/100)*height)/4*3.14
+  
+  return(round(volume, 2))
+}
+
+
+
+data <- data %>% 
+  mutate(volume_en_m3 = getvolume(circonference = data$`CIRCONFERENCE EN CM`,
+                                  height = data$Height))
+
+```
+
+**Explication :**\
+Nous calculons le volume des arbres en fonction de leur circonférence et de leur hauteur.
+
+### Surface Terrière
+
+```{r}
+
+# Définition d'une fonction pour calculer la surface terrière en m²/ha en fonction du diamètre
+getBasalArea <- function(diam){
+  # Cette fonction calcule la surface terrière en m²/ha
+  BasalArea = (3.14*(diam*0.01)^2)/4
+  
+  return(round(BasalArea, 2))
+}
+
+
+data <- data |> 
+  mutate(BasalArea = getBasalArea(diam = `DIAMETRE EN CM`))
+```
+
+**Explication :**\
+Nous ajoutons une colonne "BasalArea" qui représente la surface terrière, calculée à partir du diamètre des arbres.
+
+### Densité du Bois
+
+```{r}
+
+# Définition d'une fonction pour obtenir la densité du bois en fonction du genre et de l'épithète de l'arbre
+getWooDen <- function(genus, species, region = "World" ){
+  # Load Wood density
+  density <- getWoodDensity(
+    genus = genus,
+    species = species,
+    stand = NULL,
+    family = NULL,
+    region = region,
+    addWoodDensityData = NULL,
+    verbose = TRUE
+  )
+  
+  meanWD = density$meanWD
+  # return(meanWD = density$meanWD)
+  return(round(meanWD, 2))
+}
+
+
+data <- data |> 
+  mutate(WoodDensity = getWooDen(genus = Genre, species = EPITHETE))
+```
+
+**Explication :**\
+Nous calculons la densité du bois pour chaque arbre en fonction de son genre et de son épithète.
+
+## Calcul de la Biomasse
+
+```{r}
+
+# Définition d'une fonction pour calculer la biomasse des arbres en fonction du diamètre, de la hauteur et de la densité
+GetBiomass <- function(diam, height, density){
+  # diam : Diamètre en cm
+  # height : Hauteur en m
+  
+  biomass_en_kg = density * exp(-2.977 + log(density * (diam*1)^2 * height))
+  
+  return(round(biomass_en_kg, 2))
+}
+
+
+data <- data %>%
+  mutate(biomass_en_kg = GetBiomass(diam = `DIAMETRE EN CM`, height = Height, density = WoodDensity))
+```
+
+**Explication :**\
+Nous calculons la biomasse des arbres en utilisant leur diamètre, hauteur et densité du bois.
+
+## Diagrammes de Tranches (Histogrammes)
+
+### Créer des Intervalles de Diamètres
+
+```{r}
+intervalles <- cut(data$`DIAMETRE EN CM`, breaks = c(0, 10, 20, 30, 40, 50), right = FALSE)
+donnees_intervalles <- data.frame(Intervalles = intervalles)
+
+# Compter le nombre d'arbres dans chaque intervalle
+nombre_arbres_par_intervalle <- table(donnees_intervalles$Intervalles)
+df_comptage <- data.frame(Intervalles = names(nombre_arbres_par_intervalle), Nombre_Arbres = as.numeric(nombre_arbres_par_intervalle))
+```
+
+**Explication :**\
+Nous créons des intervalles de diamètres et comptons le nombre d'arbres dans chaque intervalle.
+
+### Créer une Fonction pour les Histogrammes Facettés
+
+```{r}
+create_histogram_faceted <- function(data, ncol, groupe, facet.labs, ylab, xlab, titre, sous_titre, sourcE) {
+  filtered_data <- data[data$groupe == groupe, ]
+  
+  ggplot(filtered_data, aes(x = cut(`DIAMETRE EN CM`, breaks = c(10, 20, 30, 40, 50, 80, 100, 300), labels = c("11-20", "21-30", "31-40", "41-50", "51-80", "81-100", "101-300")), fill = METHODES)) +
+    geom_bar(position = "dodge") +
+    labs(title = paste("Histogramme des arbres pour le groupe", groupe),
+         x = "Diamètre",
+         y = "Nombre d'arbres") +
+    facet_wrap(~ METHODES, ncol = ncol) +
+    scale_color_ipsum() +
+    scale_fill_ipsum() +
+    theme_ipsum_rc() +
+    labs(y = ylab, x = xlab,
+         title = titre,
+         subtitle = sous_titre,
+         caption = sourcE) +
+    theme(legend.position = "none", axis.text.x = element_text(size = 8)) -> gg
+  
+  return(gg)
+}
+```
+
+**Explication :**\
+Cette fonction crée des histogrammes facettés des arbres par groupe, méthode d'inventaire et intervalle de diamètres.
+
+## Suppression des Valeurs Manquantes et Agrégation des Données
+
+```{r}
+
+# Suppression des lignes avec des valeurs manquantes (NA)
+data <- data |> 
+  na.omit()
+
+# Calcul des statistiques et agrégation des données
+aggregated_data <- data %>%
+  group_by(groupe, METHODES) %>%
+  reframe(Nb_individus = n(),
+          Nb_especes = n_distinct(data$espece))
+
+```
+
+**xplication :**\
+Nous supprimons les lignes avec des valeurs manquantes et agrégeons les données par groupe et méthode d'inventaire pour calculer le nombre d'individus et d'espèces.
+
+## Analyse Statistique
+
+### ANOVA pour le Nombre d'Espèces et d'Individus
+
+```{r}
+# Effectuer une ANOVA pour le nombre d'espèces par groupe
+anova_especes <- aov(Nb_especes ~ groupe, data = aggregated_data)
+
+# Effectuer une ANOVA pour le nombre d'individus par groupe
+anova_individus <- aov(Nb_individus ~ groupe, data = aggregated_data)
+
+# Résumé des ANOVA
+summary(anova_especes)
+summary(anova_individus)
+
+```
+
+**Explication :**\
+Nous effectuons des analyses de variance (ANOVA) pour comparer le nombre d'espèces et d'individus entre les groupes.
+
+## Export des Données
+
+```{r}
+# Définir les noms des feuilles pour chaque dataframe
+#dataset_names <- list('Sheet1' = data, 'Sheet2' = data_methodes1, 'Sheet3' = density_per_ha, 'Sheet4' = meanVariables_ha, 'Sheet5' = pre_abs, 'Sheet6' = occurence)
+
+# Exporter chaque dataframe dans un fichier Excel
+#openxlsx::write.xlsx(dataset_names, file = "D:/G3 GSEA/COURS/Inventaire forestier/TP/Data/myData.xlsx")
+
+```
+
+**Explication :**\
+Nous définissons les noms des feuilles pour chaque jeu de données et exportons les données agrégées dans un fichier Excel.
+
+## Conclusion
+
+Ce script R fournit une méthode complète pour traiter et analyser les données d'inventaire forestier. En suivant ces étapes, vous pouvez transformer des données brutes en informations précieuses sur la structure et la composition de vos forêts. Ce processus comprend le nettoyage des données, la création de nouvelles variables, l'analyse statistique et la visualisation des résultats sous forme d'histogrammes.
